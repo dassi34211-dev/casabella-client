@@ -1,39 +1,34 @@
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
 import './App.css';
 import logo from './assets/logo.webp';
-import { getAllProducts } from './services/product.service';
+import { fetchProductsAsync } from './features/products/productSlice';
 
 function App() {
-  const [products, setProducts] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const dispatch = useDispatch();
+  
+  // שולפים את המידע ואת מצב הטעינה ישירות מהמוח המרכזי (Redux)
+  const { items: products, status, error } = useSelector((state) => state.products);
 
   useEffect(() => {
-    const fetchProducts = async () => {
-      try {
-        console.log("מנסה לשלוף מוצרים מהשרת...");
-        const data = await getAllProducts();
-        setProducts(data);
-      } catch (err) {
-        console.error("שגיאה בחיבור לשרת:", err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchProducts();
-  }, []);
+    // אם הסטטוס הוא 'idle' (כלומר, עוד לא הבאנו נתונים), נשגר את הפעולה שתביא אותם
+    if (status === 'idle') {
+      dispatch(fetchProductsAsync());
+    }
+  }, [status, dispatch]);
 
   return (
     <div style={{ textAlign: 'center', marginTop: '20px' }}>
       <img src={logo} alt="Casa Bella Logo" style={{ width: '200px' }} />
       <h1>המוצרים שלנו 🛋️</h1>
 
-      {loading && <p>טוען מוצרים...</p>}
-      
-      {!loading && products.length === 0 && <p>לא נמצאו מוצרים במסד הנתונים.</p>}
+      {/* מציגים הודעות לפי הסטטוס של הרידאקס */}
+      {status === 'loading' && <p>טוען מוצרים...</p>}
+      {status === 'failed' && <p style={{ color: 'red' }}>שגיאה בטעינת המוצרים: {error}</p>}
+      {status === 'succeeded' && products.length === 0 && <p>לא נמצאו מוצרים במסד הנתונים.</p>}
 
       <div style={{ display: 'flex', justifyContent: 'center', gap: '20px', flexWrap: 'wrap' }}>
-        {products.map((p) => (
+        {status === 'succeeded' && products.map((p) => (
           <div key={p._id} style={{ 
             border: '1px solid #ddd', 
             padding: '15px', 
