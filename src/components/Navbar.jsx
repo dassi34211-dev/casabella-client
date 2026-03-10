@@ -14,23 +14,19 @@ import { setLogout } from '../features/auth/authSlice';
 import logo from '../assets/logo.webp';
 
 export default function Navbar() {
-  // שליפת פרטי המשתמש הנוכחי מתוך הרידאקס (אם אין משתמש, זה יהיה null)
+  // שליפת פרטי המשתמש הנוכחי מתוך הרידאקס
   const user = useSelector((state) => state.auth.user);
   
-  // הכנת פונקציות ה-dispatch (לרידאקס) וה-navigate (לניווט)
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
-  // פונקציה שמופעלת כשהמשתמש לוחץ על כפתור "התנתקות"
+  // פונקציה להתנתקות
   const handleLogout = () => {
-    // מפעילים את הפעולה שמוחקת את הטוקן מהרידאקס ומה-localStorage
     dispatch(setLogout());
-    // מעבירים את המשתמש חזרה לדף הבית
     navigate('/');
   };
 
   return (
-    // יצירת פס הניווט העליון וצביעתו בצבע חום-זהב
     <AppBar position="static" sx={{ backgroundColor: '#b18e6a' }}>
       <Toolbar>
         
@@ -47,27 +43,38 @@ export default function Navbar() {
         </Box>
         
         {/* אזור כפתורי הניווט */}
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
           
-          {/* כפתור "דף הבית" שמופיע תמיד */}
           <Button color="inherit" component={Link} to="/">דף הבית</Button>
           
-          {/* תנאי: אם המשתמש מחובר (user קיים) */}
           {user ? (
             <>
-              {/* מציגים טקסט ברכה. בודקים גם אם הוא מנהל (isAdmin) ומציגים בהתאם */}
-              <Typography sx={{ margin: '0 15px', fontWeight: 'bold' }}>
+              {/* --- כפתור מיוחד שמופיע רק למנהל --- */}
+              {user.isAdmin && (
+                <Button 
+                  variant="contained" 
+                  component={Link} 
+                  to="/add-product"
+                  sx={{ 
+                    backgroundColor: '#5d4037', 
+                    color: 'white',
+                    fontWeight: 'bold',
+                    '&:hover': { backgroundColor: '#4b332d' }
+                  }}
+                >
+                  הוספת מוצר
+                </Button>
+              )}
+
+              <Typography sx={{ margin: '0 10px', fontWeight: 'bold' }}>
                 שלום, {user.isAdmin ? 'מנהל' : 'לקוח'}!
               </Typography>
               
-              {/* כפתור ההתנתקות שמפעיל את הפונקציה handleLogout */}
               <Button color="inherit" onClick={handleLogout} sx={{ border: '1px solid white' }}>
                 התנתקות
               </Button>
             </>
           ) : (
-            // תנאי: אם המשתמש *לא* מחובר (user הוא null)
-            // מציגים רק את כפתור ההתחברות שמפנה לעמוד ה-login
             <Button color="inherit" component={Link} to="/login" sx={{ border: '1px solid white' }}>
               התחברות
             </Button>
