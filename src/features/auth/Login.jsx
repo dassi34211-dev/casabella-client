@@ -1,87 +1,83 @@
-// ייבוא הפונקציות מספרית ריאקט
-import React from 'react';
-// ייבוא הפונקציה useForm מהספרייה שמנהלת לנו את הטפסים בצורה חכמה (דרישת חובה במסמך)
+// ייבוא הפונקציות הבסיסיות של ריאקט (ו-useState לניהול מצב של שגיאות)
+import React, { useState } from 'react';
+// ייבוא הפונקציה useForm מ-react-hook-form לניהול חכם של הטופס והולידציות
 import { useForm } from 'react-hook-form';
-// ייבוא רכיבי עיצוב מוכנים מתוך ספריית MUI כדי שהטופס ייראה מקצועי
+// ייבוא רכיבי עיצוב מוכנים מתוך ספריית MUI (תיבות טקסט, כפתורים וטקסטים)
 import { TextField, Button, Box, Typography } from '@mui/material';
+// ייבוא פונקציית הניווט של ריאקט כדי שנוכל להעביר את המשתמש לעמוד אחר אחרי ההתחברות
+import { useNavigate } from 'react-router-dom';
+// ייבוא פונקציית ההתחברות שיצרנו בקובץ הסרביס (זו ששולחת את הנתונים לשרת)
+import { loginUser } from '../../services/auth.service';
 
-// הגדרת הקומפוננטה הראשית של עמוד ההתחברות
+// הקומפוננטה הראשית של עמוד ההתחברות
 export default function Login() {
-  
-  // פירוק (Destructuring) של הפונקציות שאנחנו צריכים מתוך useForm
-  // register - מחבר את שדות הקלט (Inputs) לניהול של הספרייה
-  // handleSubmit - פונקציה שעוטפת את פעולת השליחה ומפעילה את הבדיקות שלנו
-  // formState: { errors } - אובייקט שמכיל את כל השגיאות (למשל אם חסר אימייל)
+  // פירוק הפונקציות מתוך useForm כדי לחבר את השדות ולבדוק שגיאות
   const { register, handleSubmit, formState: { errors } } = useForm();
+  
+  // הפעלת פונקציית הניווט ושמירתה במשתנה navigate
+  const navigate = useNavigate();
+  
+  // יצירת משתנה סטייט (state) שישמור הודעת שגיאה כללית (למשל "סיסמה שגויה") כדי שנציג אותה למשתמש
+  const [serverError, setServerError] = useState('');
 
-  // הפונקציה שתופעל ברגע שהמשתמש ילחץ על כפתור "התחבר" והכל יהיה תקין
-  // כרגע היא רק מדפיסה לקונסול את המידע, בהמשך נשלח את זה לשרת (Node.js)
-  const onSubmit = (data) => {
-    console.log("נתוני הטופס שנשלחו:", data);
+  // הפונקציה האסינכרונית שתופעל כשנלחץ על "התחבר" והטופס תקין
+  const onSubmit = async (data) => {
+    // איפוס השגיאה הכללית לפני תחילת השליחה החדשה
+    setServerError('');
+    
+    // ניסיון לשלוח את הנתונים לשרת
+    try {
+      // קריאה לפונקציית הסרביס שלנו עם הנתונים מהטופס (אימייל וסיסמה)
+      const response = await loginUser(data);
+      
+      // הדפסת התשובה לקונסול כדי שנוודא שהטוקן אכן הגיע
+      console.log("התחברות הצליחה! תשובת השרת:", response);
+      
+      // העברת המשתמש בחזרה לדף הבית (רשימת המוצרים) אחרי שההתחברות עברה בהצלחה
+      navigate('/');
+      
+    // במידה והשרת החזיר שגיאה (ה-catch של הסרביס נזרק לכאן)
+    } catch (error) {
+      // עדכון הסטייט של השגיאה כדי שיציג הודעה אדומה בטופס
+      setServerError('אימייל או סיסמה שגויים. נסה שוב.');
+    }
   };
 
-  // תחילת רינדור (הצגת) הממשק של הקומפוננטה
+  // רינדור הממשק (כאן תיקנתי את ההערות כדי שלא יופיעו באתר!)
   return (
-    // Box של MUI מתפקד כמו <div> אבל עם המון אפשרויות עיצוב קלות
-    // עיצבנו אותו להיות באמצע המסך, עם רוחב מקסימלי, צללית ופינות מעוגלות
-    <Box 
-      sx={{ 
-        maxWidth: 400, 
-        margin: '50px auto', 
-        padding: '30px', 
-        boxShadow: '0 4px 10px rgba(0,0,0,0.1)', 
-        borderRadius: '10px',
-        backgroundColor: '#fff',
-        textAlign: 'center'
-      }}
-    >
-      {/* Typography של MUI משמש לטקסטים וכותרות. כאן זו הכותרת הראשית (h4) */}
+    <Box sx={{ maxWidth: 400, margin: '50px auto', padding: '30px', boxShadow: '0 4px 10px rgba(0,0,0,0.1)', borderRadius: '10px', backgroundColor: '#fff', textAlign: 'center' }}>
+      
+      {/* הכותרת של הטופס */}
       <Typography variant="h4" sx={{ marginBottom: '20px', color: '#b18e6a', fontWeight: 'bold' }}>
         התחברות לחשבון
       </Typography>
 
-      {/* תגית form רגילה של HTML שעוטפת את השדות */}
-      {/* באירוע onSubmit אנחנו מפעילים את ה-handleSubmit של הספרייה, והוא מפעיל את ה-onSubmit שלנו */}
+      {/* הצגת הודעת שגיאה אדומה במקרה שהשרת דחה את ההתחברות */}
+      {serverError && (
+        <Typography color="error" sx={{ marginBottom: '15px' }}>
+          {serverError}
+        </Typography>
+      )}
+
+      {/* הטופס עצמו, עם הפעלת הבדיקות בעת השליחה */}
       <form onSubmit={handleSubmit(onSubmit)}>
         
-        {/* TextField הוא שדה קלט של MUI. הוא מקבל עיצוב מלא אוטומטית */}
+        {/* שדה הקלט של האימייל עם הגדרות חובה */}
         <TextField 
-          fullWidth // גורם לשדה לתפוס את כל הרוחב
-          label="כתובת אימייל" // הטקסט שמופיע בתוך השדה
-          variant="outlined" // סגנון העיצוב (מסגרת)
-          margin="normal" // מוסיף רווח תקני מלמעלה ולמטה
-          // כאן אנחנו מחברים את השדה לספריית הטפסים ומגדירים שהוא שדה חובה!
+          fullWidth label="כתובת אימייל" variant="outlined" margin="normal"
           {...register("email", { required: "חובה להזין אימייל" })}
-          // אם יש שגיאה בשדה הזה (למשל הושאר ריק), error יהיה true והשדה יהפוך לאדום
-          error={!!errors.email}
-          // הטקסט האדום שיופיע מתחת לשדה במקרה של שגיאה
-          helperText={errors.email ? errors.email.message : ""}
+          error={!!errors.email} helperText={errors.email ? errors.email.message : ""}
         />
 
-        {/* שדה קלט עבור הסיסמה */}
+        {/* שדה הקלט של הסיסמה עם הגדרות מינימום תווים */}
         <TextField 
-          fullWidth
-          type="password" // מסתיר את התווים שהמשתמש מקליד (נקודות שחורות)
-          label="סיסמה"
-          variant="outlined"
-          margin="normal"
-          // מחברים את השדה ומגדירים שחובה להזין, ומינימום 6 תווים
-          {...register("password", { 
-            required: "חובה להזין סיסמה",
-            minLength: { value: 6, message: "הסיסמה חייבת להכיל לפחות 6 תווים" }
-          })}
-          error={!!errors.password}
-          helperText={errors.password ? errors.password.message : ""}
+          fullWidth type="password" label="סיסמה" variant="outlined" margin="normal"
+          {...register("password", { required: "חובה להזין סיסמה", minLength: { value: 6, message: "מינימום 6 תווים" } })}
+          error={!!errors.password} helperText={errors.password ? errors.password.message : ""}
         />
 
-        {/* Button של MUI המשמש ככפתור שליחת הטופס */}
-        <Button 
-          type="submit" // מגדיר שלחיצה על הכפתור תשגר את הטופס
-          fullWidth 
-          variant="contained" // כפתור מלא בצבע
-          // עיצוב צבע הכפתור לזהב-חום של האתר
-          sx={{ marginTop: '20px', backgroundColor: '#b18e6a', padding: '10px', fontSize: '1.1rem' }}
-        >
+        {/* כפתור השליחה של הטופס */}
+        <Button type="submit" fullWidth variant="contained" sx={{ marginTop: '20px', backgroundColor: '#b18e6a', padding: '10px', fontSize: '1.1rem' }}>
           התחבר
         </Button>
       </form>
