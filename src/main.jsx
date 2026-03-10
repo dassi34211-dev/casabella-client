@@ -7,11 +7,16 @@ import App from './App.jsx';
 import { Provider } from 'react-redux';
 import { store } from './app/store';
 
+// ייבוא של הראוטר (הנווט)
+import { BrowserRouter } from 'react-router-dom';
+
 createRoot(document.getElementById('root')).render(
   <StrictMode>
-    {/* עוטפים את האפליקציה כדי שלכולם תהיה גישה ל-Redux */}
     <Provider store={store}>
-      <App />
+      {/* הוספנו את הראוטר שעוטף את האפליקציה */}
+      <BrowserRouter>
+        <App />
+      </BrowserRouter>
     </Provider>
   </StrictMode>,
 );
