@@ -6,7 +6,7 @@ import './App.css';
 import Navbar from './components/Navbar';
 import ProductList from './features/products/ProductList';
 import Login from './features/auth/Login';
-import AddProduct from './features/products/AddProduct'; // ייבוא העמוד החדש
+import AddProduct from './features/products/AddProduct'; // נשתמש באותה קומפוננטה גם לעריכה
 
 function App() {
   // שליפת המשתמש מהמוח המרכזי (Redux)
@@ -29,6 +29,14 @@ function App() {
           path="/add-product" 
           element={user && user.isAdmin ? <AddProduct /> : <Navigate to="/" />} 
         />
+
+        {/* --- עמוד עריכת מוצר --- */}
+        {/* השתמשנו ב-":id" כדי שהכתובת תהיה דינמית לכל מפה ומפה */}
+        <Route 
+          path="/edit-product/:id" 
+          element={user && user.isAdmin ? <AddProduct /> : <Navigate to="/" />} 
+        />
+
       </Routes>
     </>
   );

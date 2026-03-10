@@ -1,92 +1,163 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+// ייבוא פונקציות מרידאקס כדי לדבר עם "המוח" של האפליקציה
 import { useDispatch, useSelector } from 'react-redux';
-import { addProductAsync } from './productSlice';
-import { useNavigate } from 'react-router-dom';
-import { TextField, Button, Box, Typography, Paper } from '@mui/material';
+// useParams: מושך נתונים מהכתובת (למשל ה-ID). useNavigate: מעביר אותנו עמוד.
+import { useParams, useNavigate } from 'react-router-dom';
+// ייבוא הפעולות שמוסיפות או מעדכנות מוצרים בשרת
+import { addProductAsync, updateProductAsync } from './productSlice';
+// ייבוא רכיבי עיצוב מוכנים מ-Material UI
+import { Button, TextField, Box, Typography, Container } from '@mui/material';
 
 export default function AddProduct() {
-  // הגדרת מצב (State) לנתוני הטופס
+  // 1. הגדרת כלי העבודה שלנו
+  const { id } = useParams(); // לוכד את ה-ID משורת הכתובת (אם קיים)
+  const navigate = useNavigate(); // מאפשר לנו "לנסוע" לעמוד אחר בקוד
+  const dispatch = useDispatch(); // מאפשר לנו לשגר פעולות לרידאקס
+
+  // 2. זיהוי המצב: אם יש ID בכתובת, סימן שאנחנו עורכים מוצר קיים
+  const isEdit = Boolean(id);
+
+  // 3. שליפת המוצר שאנחנו רוצים לערוך מתוך רשימת המוצרים ברידאקס
+  const productToEdit = useSelector((state) =>
+    state.products.items.find((p) => p._id === id)
+  );
+
+  // שליפת הטוקן של המנהל (כדי שהשרת ירשה לנו להוסיף/לעדכן)
+  const token = useSelector((state) => state.auth.token);
+
+  // 4. הגדרת המשתנים של הטופס
   const [name, setName] = useState('');
   const [price, setPrice] = useState('');
   const [image, setImage] = useState(null);
   
-  const dispatch = useDispatch();
-  const navigate = useNavigate();
-  
-  // שליפת הטוקן כדי להוכיח לשרת שאנחנו המנהלת (dassi34211@gmail.com)
-  const token = useSelector((state) => state.auth.token);
+  // *** חדש! משתנה לשמירת הקישור של התצוגה המקדימה ***
+  const [preview, setPreview] = useState(null); 
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
+  // 5. מילוי אוטומטי של הטופס בעריכה (כולל תצוגה של התמונה הקיימת!)
+  useEffect(() => {
+    if (isEdit && productToEdit) {
+      setName(productToEdit.name); // שם את השם הישן
+      setPrice(productToEdit.price); // שם את המחיר הישן
+      
+      // אם יש למוצר תמונה בשרת, נציג אותה בתור התצוגה המקדימה ההתחלתית
+      if (productToEdit.image) {
+        setPreview(`http://localhost:5000/${productToEdit.image}`);
+      }
+    }
+  }, [isEdit, productToEdit]); // מופעל רק כשהמשתנים האלו משתנים
 
-    // יצירת אובייקט FormData - חובה כשמעלים קבצים (Images) לשרת
+  // *** חדש! פונקציה שמטפלת בבחירת תמונה חדשה ***
+  const handleImageChange = (e) => {
+    const file = e.target.files[0]; // לוקחים את הקובץ שהמשתמש בחר
+    if (file) {
+      setImage(file); // שומרים את הקובץ המקורי בשביל לשלוח לשרת
+      // יוצרים "קישור זמני" מקומי בדפדפן כדי להציג את התמונה מיד
+      setPreview(URL.createObjectURL(file)); 
+    }
+  };
+
+  // 6. הפונקציה שמופעלת כשלוחצים על "שמור"
+  const handleSubmit = async (e) => {
+    e.preventDefault(); // עוצר את רענון העמוד האוטומטי של הדפדפן
+
+    // יצירת אובייקט מיוחד (FormData) שיודע להכיל גם תמונות וגם טקסט
     const formData = new FormData();
     formData.append('name', name);
     formData.append('price', price);
-    formData.append('image', image); // הקובץ עצמו
-
-    // שיגור הפעולה לרידאקס
-    dispatch(addProductAsync({ formData, token }));
     
-    // חזרה לדף המוצרים כדי לראות את המפה החדשה
+    // נוסיף תמונה ל"חבילה" רק אם המשתמש בחר תמונה חדשה
+    if (image) {
+      formData.append('image', image);
+    }
+
+    // בדיקה: האם אנחנו עורכים או מוסיפים חדש?
+    if (isEdit) {
+      // אם אנחנו בעריכה - נשלח בקשת עדכון עם ה-ID הספציפי
+      dispatch(updateProductAsync({ id, formData, token }));
+    } else {
+      // אם אנחנו בהוספה - נשלח בקשה ליצירת מוצר חדש
+      dispatch(addProductAsync({ formData, token }));
+    }
+    
+    // 7. בסיום הפעולה, חוזרים אוטומטית לדף הבית (לרשימת המפות)
     navigate('/');
   };
 
   return (
-    <Box sx={{ display: 'flex', justifyContent: 'center', mt: 5 }}>
-      <Paper elevation={3} sx={{ padding: 4, width: '100%', maxWidth: 400, borderRadius: 3 }}>
-        <Typography variant="h5" gutterBottom sx={{ textAlign: 'center', color: '#b18e6a', fontWeight: 'bold' }}>
-          הוספת מפה חדשה 🏠
-        </Typography>
+    <Container maxWidth="sm">
+      <Box sx={{ mt: 4, p: 3, boxShadow: 3, borderRadius: 2, bgcolor: 'white' }}>
         
+        {/* כותרת דינמית שמשתנה לפי המצב (עריכה או הוספה) */}
+        <Typography variant="h4" align="center" gutterBottom>
+          {isEdit ? 'עריכת מפה ✏️' : 'הוספת מפה חדשה 🏠'}
+        </Typography>
+
+        {/* הטופס עצמו */}
         <form onSubmit={handleSubmit}>
-          <TextField
-            fullWidth
-            label="שם המפה"
-            variant="outlined"
-            margin="normal"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            required
-          />
-          <TextField
-            fullWidth
-            label="מחיר (₪)"
-            type="number"
-            variant="outlined"
-            margin="normal"
-            value={price}
-            onChange={(e) => setPrice(e.target.value)}
-            required
+          
+          {/* שדה הקלדה לשם המוצר */}
+          <TextField 
+            fullWidth 
+            label="שם המוצר" 
+            value={name} 
+            onChange={(e) => setName(e.target.value)} 
+            margin="normal" 
+            required 
           />
           
-          {/* כפתור בחירת תמונה */}
-          <Button
-            variant="contained"
-            component="label"
-            fullWidth
-            sx={{ mt: 2, mb: 2, backgroundColor: '#f5f5f5', color: '#333', '&:hover': { backgroundColor: '#e0e0e0' } }}
-          >
-            {image ? `נבחר קובץ: ${image.name}` : 'בחר תמונת מפה'}
-            <input
-              type="file"
-              hidden
-              accept="image/*"
-              onChange={(e) => setImage(e.target.files[0])}
-              required
-            />
-          </Button>
+          {/* שדה הקלדה למחיר (מספרים בלבד) */}
+          <TextField 
+            fullWidth 
+            label="מחיר" 
+            type="number" 
+            value={price} 
+            onChange={(e) => setPrice(e.target.value)} 
+            margin="normal" 
+            required 
+          />
 
-          <Button
-            type="submit"
-            variant="contained"
-            fullWidth
-            sx={{ backgroundColor: '#b18e6a', py: 1.5, fontWeight: 'bold' }}
+          {/* אזור העלאת התמונה */}
+          <Box sx={{ mt: 2, mb: 2 }}>
+            <Typography variant="body2" gutterBottom>
+              {isEdit ? 'החלפת תמונה (אופציונלי):' : 'בחירת תמונה:'}
+            </Typography>
+            <input 
+              type="file" 
+              accept="image/*" 
+              onChange={handleImageChange} // החלפנו לפונקציה החדשה שלנו שיודעת לעשות תצוגה מקדימה!
+              required={!isEdit} // חובה להעלות תמונה רק בהוספה, בעריכה זה רשות
+            />
+          </Box>
+
+          {/* *** חדש! הצגת התצוגה המקדימה של התמונה *** */}
+          {preview && (
+            <Box sx={{ textAlign: 'center', mt: 2, mb: 2 }}>
+              <img 
+                src={preview} 
+                alt="תצוגה מקדימה" 
+                style={{ 
+                  maxWidth: '100%', // שלא יחרוג מרוחב הטופס
+                  height: '200px', // גובה אחיד
+                  objectFit: 'cover', // חותך יפה אם הפרופורציות שונות
+                  borderRadius: '10px', // פינות מעוגלות
+                  boxShadow: '0 4px 8px rgba(0,0,0,0.1)' // צל עדין
+                }} 
+              />
+            </Box>
+          )}
+
+          {/* כפתור השמירה שמשנה את הטקסט שלו בהתאם למצב */}
+          <Button 
+            type="submit" 
+            fullWidth 
+            variant="contained" 
+            sx={{ mt: 3, bgcolor: '#b18e6a', '&:hover': { bgcolor: '#8d6e63' } }}
           >
-            שמור מוצר
+            {isEdit ? 'שמור שינויים' : 'הוסף מוצר'}
           </Button>
+          
         </form>
-      </Paper>
-    </Box>
+      </Box>
+    </Container>
   );
 }

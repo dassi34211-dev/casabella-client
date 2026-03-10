@@ -5,7 +5,7 @@ import axios from 'axios';
 // כתובת השרת שלנו
 const API_URL = 'http://localhost:5000/api';
 
-// פונקציה אסינכרונית לשליפת כל המוצרים מהשרת
+// 1. שליפת כל המוצרים (GET)
 export const fetchProductsAsync = createAsyncThunk(
   'products/fetchProducts',
   async () => {
@@ -14,11 +14,10 @@ export const fetchProductsAsync = createAsyncThunk(
   }
 );
 
-// פונקציה אסינכרונית להוספת מוצר חדש (כולל תמונה)
+// 2. הוספת מוצר חדש (POST)
 export const addProductAsync = createAsyncThunk(
   'products/addProduct',
   async ({ formData, token }) => {
-    // שליחת בקשת POST עם FormData (בשביל התמונה) והטוקן של המנהל
     const response = await axios.post(`${API_URL}/products`, formData, {
       headers: {
         'x-auth-token': token,
@@ -30,19 +29,34 @@ export const addProductAsync = createAsyncThunk(
   }
 );
 
-// הפונקציה ששאלת עליה: מחיקת מוצר מהשרת
+// 3. מחיקת מוצר (DELETE)
 export const deleteProductAsync = createAsyncThunk(
   'products/deleteProduct',
   async ({ id, token }) => {
-    // שליחת בקשת DELETE עם שתי אפשרויות לטוקן כדי למנוע שגיאות 500
-    const response = await axios.delete(`${API_URL}/products/${id}`, {
+    await axios.delete(`${API_URL}/products/${id}`, {
       headers: {
         'x-auth-token': token,
         'Authorization': `Bearer ${token}`
       }
     });
-    // מחזירים את ה-ID כדי שהרידאקס ידע איזה מוצר להעלים מהמסך
     return id;
+  }
+);
+
+// --- הנה הפעולה החדשה שהייתה חסרה! ---
+// 4. עדכון מוצר קיים (PUT)
+export const updateProductAsync = createAsyncThunk(
+  'products/updateProduct',
+  async ({ id, formData, token }) => {
+    // אנחנו שולחים את הבקשה לכתובת של המוצר הספציפי לפי ה-ID שלו
+    const response = await axios.put(`${API_URL}/products/${id}`, formData, {
+      headers: {
+        'x-auth-token': token,
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'multipart/form-data'
+      }
+    });
+    return response.data; // השרת מחזיר לנו את המוצר המעודכן
   }
 );
 
@@ -61,13 +75,21 @@ const productSlice = createSlice({
         state.status = 'succeeded';
         state.items = action.payload;
       })
-      // טיפול בהוספת מוצר - דוחף את המוצר החדש למערך הקיים
+      // טיפול בהוספת מוצר - דוחף את המוצר החדש למערך
       .addCase(addProductAsync.fulfilled, (state, action) => {
         state.items.push(action.payload);
       })
       // טיפול במחיקת מוצר - מסנן החוצה את המוצר שנמחק
       .addCase(deleteProductAsync.fulfilled, (state, action) => {
         state.items = state.items.filter((product) => product._id !== action.payload);
+      })
+      // --- הנה הטיפול בעדכון שמונע מהמסך להישאר לבן! ---
+      // טיפול בעדכון מוצר - מוצא את המוצר הישן ומחליף אותו בחדש
+      .addCase(updateProductAsync.fulfilled, (state, action) => {
+        const index = state.items.findIndex((p) => p._id === action.payload._id);
+        if (index !== -1) {
+          state.items[index] = action.payload; // מחליפים את הישן בחדש שחזר מהשרת
+        }
       });
   },
 });
