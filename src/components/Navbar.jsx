@@ -1,7 +1,6 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import { setLogout } from '../features/auth/authSlice';
-// --- הנה הייבוא החדש של העגלה ---
 import { clearCart } from '../features/cart/cartSlice'; 
 import { AppBar, Toolbar, Typography, Button, Box, IconButton } from '@mui/material';
 import logoImg from '../assets/logo.webp';
@@ -24,7 +23,6 @@ export default function Navbar() {
     }
   };
 
-  // --- הפונקציה המעודכנת! מרוקנת עגלה ואז מנתקת ---
   const handleLogout = () => {
     dispatch(clearCart()); 
     dispatch(setLogout());
@@ -68,6 +66,17 @@ export default function Navbar() {
                 <Typography variant="body2" sx={{ mr: 1, fontWeight: 500 }}>
                    שלום, {getCleanName(user.name)}
                 </Typography>
+                
+                {/* *** חדש! הכפתור לדף ההזמנות שלי *** */}
+                <Button 
+                  color="inherit" 
+                  component={Link} 
+                  to="/my-orders" 
+                  sx={{ fontSize: '0.85rem', mr: 1, color: '#5d4037', fontWeight: 'bold' }}
+                >
+                  ההזמנות שלי
+                </Button>
+
                 <IconButton size="small" onClick={handleLogout} title="התנתקות">
                   <LogoutIcon fontSize="small" />
                 </IconButton>
