@@ -9,11 +9,14 @@ import LogoutIcon from '@mui/icons-material/Logout';
 import ShoppingCartOutlineIcon from '@mui/icons-material/ShoppingCartOutlined';
 
 export default function Navbar() {
+  // שליפת המשתמש והעגלה מה-Redux כדי לעדכן את הממשק בזמן אמת
   const user = useSelector((state) => state.auth.user);
   const cartItems = useSelector((state) => state.cart.items);
+  
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
+  // פונקציה לניקוי תווים מיוחדים בשם המשתמש (מטפלת בבעיות קידוד של עברית)
   const getCleanName = (name) => {
     if (!name) return "";
     try {
@@ -23,6 +26,7 @@ export default function Navbar() {
     }
   };
 
+  // פונקציית התנתקות: מנקה את העגלה מהרידאקס, מוחקת את פרטי המשתמש ומחזירה לדף הבית
   const handleLogout = () => {
     dispatch(clearCart()); 
     dispatch(setLogout());
@@ -31,6 +35,7 @@ export default function Navbar() {
 
   return (
     <Box sx={{ flexGrow: 1, width: '100%' }}>
+      {/* שורת הכרזה עליונה (Top Bar) לעיצוב ומבצעים */}
       <Box sx={{ 
         bgcolor: '#e9dad1', py: 1, textAlign: 'center', 
         fontSize: '0.9rem', color: '#5d4037', width: '100%'
@@ -41,33 +46,44 @@ export default function Navbar() {
       <AppBar position="static" sx={{ bgcolor: 'white', color: 'black', boxShadow: 'none', borderBottom: '1px solid #eee' }}>
         <Toolbar sx={{ justifyContent: 'space-between', px: '20px !important' }}>
           
+          {/* צד ימין: תפריט ניווט ראשי וכפתורי מנהל */}
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
              <Button color="inherit" component={Link} to="/" sx={{ minWidth: 'auto', fontWeight: 500 }}>
                מפות שולחן
              </Button>
              
+             {/* הרשאות מנהל: כפתורים שיופיעו רק אם המשתמש הוא Admin */}
              {user?.isAdmin && (
-               <Button 
-                 variant="outlined" component={Link} to="/add-product" 
-                 sx={{ borderColor: '#b18e6a', color: '#b18e6a', borderRadius: '10px', py: 0.2, fontWeight: 'bold', '&:hover': { bgcolor: '#fdfbf9', borderColor: '#8d6e63' } }}
-               >
-                 + הוספת מוצר
-               </Button>
+               <>
+                 <Button color="inherit" component={Link} to="/admin/orders" sx={{ fontWeight: 500 }}>
+                   ניהול הזמנות
+                 </Button>
+                 <Button 
+                   variant="outlined" component={Link} to="/add-product" 
+                   sx={{ borderColor: '#b18e6a', color: '#b18e6a', borderRadius: '10px', py: 0.2, fontWeight: 'bold', '&:hover': { bgcolor: '#fdfbf9', borderColor: '#8d6e63' } }}
+                 >
+                   + הוספת מוצר
+                 </Button>
+               </>
              )}
           </Box>
 
+          {/* מרכז: לוגו האתר (לחיץ ומחזיר לדף הבית) */}
           <Link to="/" style={{ display: 'flex', alignItems: 'center' }}>
             <img src={logoImg} alt="CasaBella" style={{ height: '60px' }} />
           </Link>
 
+          {/* צד שמאל: אזור אישי, עגלה והתנתקות */}
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            
+            {/* בדיקה: האם המשתמש מחובר? */}
             {user ? (
               <Box sx={{ display: 'flex', alignItems: 'center' }}>
                 <Typography variant="body2" sx={{ mr: 1, fontWeight: 500 }}>
                    שלום, {getCleanName(user.name)}
                 </Typography>
                 
-                {/* *** חדש! הכפתור לדף ההזמנות שלי *** */}
+                {/* כפתור היסטוריית הזמנות ללקוח מחובר */}
                 <Button 
                   color="inherit" 
                   component={Link} 
@@ -82,11 +98,13 @@ export default function Navbar() {
                 </IconButton>
               </Box>
             ) : (
+              /* אם לא מחובר: הצגת כפתור כניסה לאתר */
               <IconButton component={Link} to="/login" title="התחברות">
                 <PersonOutlineIcon />
               </IconButton>
             )}
             
+            {/* כפתור עגלת קניות עם "בועה" המציגה את כמות הפריטים */}
             <IconButton component={Link} to="/cart">
               <Box sx={{ position: 'relative' }}>
                 <ShoppingCartOutlineIcon />
@@ -96,6 +114,7 @@ export default function Navbar() {
                     color: 'white', borderRadius: '50%', width: 18, height: 18, 
                     fontSize: '10px', display: 'flex', justifyContent: 'center', alignItems: 'center' 
                   }}>
+                    {/* חישוב סך כל הכמויות של המוצרים בעגלה */}
                     {cartItems.reduce((total, item) => total + item.quantity, 0)}
                   </Box>
                 )}
